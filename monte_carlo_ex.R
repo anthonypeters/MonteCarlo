@@ -1,3 +1,12 @@
+#######################################################################################
+  #    Title: Monte Carlo
+  #    Author:  Jonathan Regenstein
+  #    Date: 2018-06-05
+  #    Availability: https://rviews.rstudio.com/2018/06/05/monte-carlo/
+#######################################################################################
+
+# Comments added by Ashton Hansen <ashhansen6@outlook.com>
+
 #Packages used
 library(tidyquant)
 library(tidyverse)
