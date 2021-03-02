@@ -8,7 +8,7 @@ library(openxlsx)
 # Pulling data using quantmod (package within tidyquant)
 # Run after running re-balance script
 
-current <- readxl::read_excel(file.choose())
+current <- readxl::read_excel("weights.xlsx")
 
 symbols <- current$Ticker
 weights <- current$Weight
@@ -28,14 +28,23 @@ prices <- data.frame(prices)
 prices_sub <- prices[,!sapply(prices, function(x) any(is.na(x)))]
 colnames(symbols_updated) <- colnames(prices_sub)
 
-# Calculate non-transformed returns (dollar amount)
-returns <- data.frame()
+# Calculate  DAILY non-transformed returns (dollar amount)
+returns_daily <- data.frame()
 for (j in 1:ncol(prices_sub)){
   for (i in 1:(nrow(prices_sub) - 1)){
     returns[i,j] <- prices_sub[i+1,j] - prices_sub[i,j]
   }
 }
 colnames(returns) <- colnames(symbols_updated)
+
+# Calculate MONTHLY non-transformed returns (dollar amount)
+returns_monthly <- returns_daily %>%
+  tq_portfolio(assets_col  = symbols_updated, 
+               returns_col = returns_daily,
+               weights     = weights,
+               col_rename  = "returns",
+               rebalance_on = "months")
+
 
 
 # Cleaning up i and j for later
@@ -84,9 +93,9 @@ mc.sim <- function(x,
                                   mean[j],
                                   stdev[j])
           for (i in 2:nrow(sim_return)){
-          sim_accum[i,j] <- sim_accum[i-1,j] + sim_return[i,j]
+            sim_accum[i,j] <- sim_accum[i-1,j] + sim_return[i,j]
           }
-            }
+        }
       }
     }
     colnames(sim_accum) <- colnames(x)
