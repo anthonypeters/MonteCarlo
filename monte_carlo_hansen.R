@@ -1,50 +1,49 @@
-# This is a Monte Carlo simulation built (mostly) from scratch
-
-# Packages used:
+# Packages used & setup:
 library(tidyverse)
 library(tidyquant)
 library(openxlsx)
+
+quandl_api_key("mRJDZwn3giwAm1kowtFr")
+av_api_key("DPHG14C1C908V9GE")
 
 # Pulling data using quantmod (package within tidyquant)
 # Run after running re-balance script
 
 current <- readxl::read_excel("weights.xlsx")
 
-symbols <- current$Ticker
-weights <- current$Weight
+symbols <- current$Tickers
+weights <- current$Weights
 
-# Get prices using 'quantmod' from 'tidyquant'
-# The next eight lines are from monte_carlo_ex.R
-prices <- 
-  getSymbols(symbols, src = 'yahoo', 
-             from = "2012-12-31",
-             to = "2017-12-31",
-             auto.assign = TRUE) %>% 
-  map(~Ad(get(.))) %>%
-  reduce(merge) %>% 
-  `colnames<-`(symbols)
+# Get prices
+symbols_mod <- as.character(mapply("EOD/", current$Tickers, FUN = paste, sep = ""))
+stock_prices <- tq_get(symbols_mod, get = "quandl", from = Sys.Date()-(365*3), to = Sys.Date())
 
-prices <- data.frame(prices)
-prices_sub <- prices[,!sapply(prices, function(x) any(is.na(x)))]
-colnames(symbols_updated) <- colnames(prices_sub)
+# Remove "EOD/" prefix from symbols
+stock_prices$symbol <- substr(stock_prices$symbol, 5, 9)
 
-# Calculate  DAILY non-transformed returns (dollar amount)
-returns_daily <- data.frame()
-for (j in 1:ncol(prices_sub)){
-  for (i in 1:(nrow(prices_sub) - 1)){
-    returns[i,j] <- prices_sub[i+1,j] - prices_sub[i,j]
-  }
-}
-colnames(returns) <- colnames(symbols_updated)
+# Calculate DAILY returns (dollar amount)
+stock_returns_daily <- stock_prices %>%
+  group_by(symbol) %>%
+  tq_transmute(select = adj_close,
+               mutate_fun = periodReturn,
+               period = "daily",
+               type = "arithmetic",
+               # type = "log",
+               col_rename = "returns") %>%
+  pivot_wider(names_from = symbol, values_from = returns) %>%
+  data.fame()
 
-# Calculate MONTHLY non-transformed returns (dollar amount)
-returns_monthly <- returns_daily %>%
-  tq_portfolio(assets_col  = symbols_updated, 
-               returns_col = returns_daily,
-               weights     = weights,
-               col_rename  = "returns",
-               rebalance_on = "months")
-
+# Calculate MONTHLY returns (dollar amount)
+stock_returns_monthly <- stock_prices %>%
+  group_by(symbol) %>%
+  tq_transmute(select = adj_close,
+               mutate_fun = periodReturn,
+               period = "monthly",
+               type = "arithmetic",
+               # type = "log",
+               col_rename = "returns") %>%
+  pivot_wider(names_from = symbol, values_from = returns) %>%
+  data.frame()
 
 
 # Cleaning up i and j for later
@@ -69,32 +68,29 @@ rm(j)
 # Making distribution vector for each security
 distribution <- c()
 
-
+# Function for running Monte Carlo simulation
 mc.sim <- function(x, 
                    dist = "normal", 
-                   period_type = 'daily', 
-                   period_count = "365",
+                   period_count = 36, # 3-month time line
                    init_invest = 0,
-                   nsim = 1000){
+                   nsim = 100){
   cumulative <- data.frame()
   mean <- c()
   stdev <- c()
-  sim_return <- matrix(nrow = strtoi(period_count, 10L), ncol = NCOL(x))
-  sim_accum <- matrix(nrow = strtoi(period_count, 10L), ncol = NCOL(x))
+  sim_return <- matrix(nrow = period_count, ncol = NCOL(x))
+  sim_accum <- matrix(nrow = period_count, ncol = NCOL(x))
   sim_accum[1,] <- init_invest
   sim_out <- list()
   for (m in 1:nsim){
     for (j in 1:ncol(x)){
       if (dist == "normal"){
-        if (period_type == 'daily'){
-          mean[j] <- mean(x[,j])
-          stdev[j] <- sd(x[,j])
-          sim_return[,j] <- rnorm(strtoi(period_count, 10L),
-                                  mean[j],
-                                  stdev[j])
-          for (i in 2:nrow(sim_return)){
-            sim_accum[i,j] <- sim_accum[i-1,j] + sim_return[i,j]
-          }
+        mean[j] <- mean(x[,j])
+        stdev[j] <- sd(x[,j])
+        sim_return[,j] <- rnorm(period_count,
+                                mean[j],
+                                stdev[j])
+        for (i in 2:nrow(sim_return)){
+          sim_accum[i,j] <- sim_accum[i-1,j] + sim_return[i,j]
         }
       }
     }
@@ -105,27 +101,28 @@ mc.sim <- function(x,
 }
 
 # One year of daily returns example
-one_year <- mc.sim(returns)
+three_months <- mc.sim(stock_returns_monthly)
 
 # Narrowing example down to TLT
-TLT_sims <- matrix(nrow = 365, ncol = length(one_year))
-for (s in 1:length(one_year)){
-  TLT_sims[,s] <- unlist(one_year[[s]][,"TLT"])
+TLT_sims <- matrix(nrow = 36, ncol = length(three_months))
+for (s in 1:length(three_months)){
+  TLT_sims[,s] <- unlist(three_months[[s]][,"TLT"])
 }
 
 # Plotting Accumulated Returns
-# MAY TAKE A LONG TIME (< 30 minutes), DO NOT RUN IF NOT NECESSARY!
 TLT_sims <- data.frame(TLT_sims)
-index = seq(1,365,1)
+index = seq(1,36,1)
 
 set.seed(1456)
 plot(TLT_sims$X1 ~ index,
      type = "l",
      main = "TLT Cumulative Return Simulation",
      ylab = "Cumulative Return (USD)",
-     ylim = c(-75, 75),
-     xlab = "Day",
+     ylim = c(-1, 1),
+     xlab = "Month",
      col = "red")
 for (p in 2:length(TLT_sims)){
   lines(TLT_sims[,p] ~ index, col = sample(colors(), replace = F))
 }
+
+
