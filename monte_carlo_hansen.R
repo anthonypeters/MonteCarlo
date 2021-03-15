@@ -101,7 +101,7 @@ mc.sim <- function(x,
 }
 
 # One year of daily returns example
-three_months <- mc.sim(stock_returns_monthly)
+three_months <- mc.sim(stock_returns_monthly, init_invest = 100000)
 
 # Narrowing example down to TLT
 TLT_sims <- matrix(nrow = 36, ncol = length(three_months))
@@ -118,7 +118,8 @@ plot(TLT_sims$X1 ~ index,
      type = "l",
      main = "TLT Cumulative Return Simulation",
      ylab = "Cumulative Return (USD)",
-     ylim = c(-1, 5),
+     ylim = c(min(TLT_sims[1:length(TLT_sims$X1),]), 
+              max(TLT_sims[1:length(TLT_sims$X1),])),
      xlab = "Month",
      col = "red")
 for (p in 2:length(TLT_sims)){
