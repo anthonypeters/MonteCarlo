@@ -72,7 +72,7 @@ distribution <- c()
 mc.sim <- function(x, 
                    dist = "normal", 
                    period_count = 36, # 3-month time line
-                   init_invest = 0,
+                   init_invest = 1,
                    nsim = 100){
   cumulative <- data.frame()
   mean <- c()
@@ -86,11 +86,11 @@ mc.sim <- function(x,
       if (dist == "normal"){
         mean[j] <- mean(x[,j])
         stdev[j] <- sd(x[,j])
-        sim_return[,j] <- rnorm(period_count,
+        sim_return[,j] <- 1 + rnorm(period_count,
                                 mean[j],
                                 stdev[j])
         for (i in 2:nrow(sim_return)){
-          sim_accum[i,j] <- sim_accum[i-1,j] + sim_return[i,j]
+          sim_accum[i,j] <- sim_accum[i-1,j] * sim_return[i,j]
         }
       }
     }
@@ -118,7 +118,7 @@ plot(TLT_sims$X1 ~ index,
      type = "l",
      main = "TLT Cumulative Return Simulation",
      ylab = "Cumulative Return (USD)",
-     ylim = c(-1, 1),
+     ylim = c(-1, 5),
      xlab = "Month",
      col = "red")
 for (p in 2:length(TLT_sims)){
