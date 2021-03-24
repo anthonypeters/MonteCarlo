@@ -37,6 +37,13 @@ asset_returns_long <-
   na.omit()
 ####
 
+#### Isolating returns of individual assets
+FDX <- subset(asset_returns_long, subset = (asset == "FDX"),
+              select = returns, drop = TRUE)
+MSFT<- subset(asset_returns_long, subset = (asset == "MSFT"),
+              select = returns, drop = TRUE)
+####
+
 #### Calculate Monthly Returns
 portfolio_returns_tq_rebalanced_monthly <- 
   asset_returns_long %>%
