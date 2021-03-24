@@ -50,14 +50,15 @@ modified_tickers <- sprintf("EOD/%s", xl_tickers$Ticker)
 stock_prices <- tq_get(modified_tickers, get = "quandl", from = Sys.Date()-(365*3), to = Sys.Date())
 
 # Calculate returns on the stocks over the time period
-stock_returns <- stock_prices %>%
+stock_returns_daily <- stock_prices %>%
   group_by(symbol) %>%
   tq_transmute(select = adj_close,
                mutate_fun = periodReturn,
-               period = "monthly",
+               period = "daily",
                type = "log",
                col_rename = "returns") %>%
   pivot_wider(names_from = symbol, values_from = returns)
+colnames(stock_returns_daily[-1]) <- symbols
 
 # Coerce the stock returns into a xts time series
 stock_returns <- stock_returns %>% tk_xts(silent = TRUE)
