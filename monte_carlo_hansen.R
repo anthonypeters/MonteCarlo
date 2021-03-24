@@ -4,7 +4,7 @@ library(tidyquant)
 library(openxlsx)
 
 quandl_api_key("mRJDZwn3giwAm1kowtFr")
-av_api_key("DPHG14C1C908V9GE")
+# av_api_key("DPHG14C1C908V9GE")
 
 # Pulling data using quantmod (package within tidyquant)
 # Run after running re-balance script
@@ -27,8 +27,8 @@ stock_returns_daily <- stock_prices %>%
   tq_transmute(select = adj_close,
                mutate_fun = periodReturn,
                period = "daily",
-               type = "arithmetic",
-               # type = "log",
+               # type = "arithmetic",
+               type = "log",
                col_rename = "returns") %>%
   pivot_wider(names_from = symbol, values_from = returns) %>%
   data.fame()
@@ -39,22 +39,23 @@ stock_returns_monthly <- stock_prices %>%
   tq_transmute(select = adj_close,
                mutate_fun = periodReturn,
                period = "monthly",
-               type = "arithmetic",
-               # type = "log",
+               # type = "arithmetic",
+               type = "log",
                col_rename = "returns") %>%
   pivot_wider(names_from = symbol, values_from = returns) %>%
   data.frame()
 
-
-# Cleaning up i and j for later
-rm(i)
-rm(j)
-
-# Histogram(s)
+## Histogram(s)
 # ONY RUN IF YOU WANT TO SEE LOTS OF HISTOGRAMS
 # mapply(FUN = hist, returns, 
 #       main = colnames(prices_sub), 
 #       xlab = "Returns ($)")
+
+# Correlation Matrices
+## Correlating monthly returns
+return_cor_mat <- round(cor(stock_returns_monthly[, -1]), 4) %>%
+  transmute(return_cor_mat >= 0.3 | return_cor_mat <= -0.3)
+
 
 # MC Sim Function
 ## Inputs:
