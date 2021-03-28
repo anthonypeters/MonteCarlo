@@ -1,5 +1,6 @@
 library(tidyquant)
 library(tidyverse)
+library(openxlsx)
 library(timetk)
 library(broom)
 library(highcharter)
@@ -38,10 +39,20 @@ asset_returns_long <-
 ####
 
 #### Isolating returns of individual assets
-FDX <- subset(asset_returns_long, subset = (asset == "FDX"),
-              select = returns, drop = TRUE)
-MSFT<- subset(asset_returns_long, subset = (asset == "MSFT"),
-              select = returns, drop = TRUE)
+returns <- data.frame(matrix(nrow = 56, ncol = length(symbols)))
+for (i in 1:length(symbols)){
+  returns[,i] <- subset(asset_returns_long, subset = (asset == symbols[i]),
+                        select = returns, drop = FALSE)
+}
+
+colnames(returns) <- symbols
+rownames(returns) <- asset_returns_long$date[1:56]
+####
+
+#### Creating correlation matrix of returns
+return_cor <- cor(returns, method = "pearson") %>%
+  round(digits = 4)
+write.xlsx(return_cor, file = "returns_correlation_matrix.xlsx", row.names = TRUE)
 ####
 
 #### Calculate Monthly Returns
