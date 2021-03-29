@@ -5,6 +5,7 @@ library(timetk)
 library(broom)
 library(highcharter)
 
+
 #### PART 1 ####
 
 #### Read In Symbols
@@ -55,6 +56,25 @@ return_cor <- cor(returns, method = "pearson") %>%
 write.xlsx(return_cor, file = "returns_correlation_matrix.xlsx", row.names = TRUE)
 ####
 
+
+###################### WIP ###################### 
+
+return_covariance <- cov(returns)
+chol_mat <- chol(return_covariance)
+
+cor_var <- as.numeric(returns) %*% as.numeric(chol_mat)
+
+write.xlsx(return_covariance, file = "covariances.xlsx", row.names = TRUE, sheetName = "Covariance_Returns")
+write.xlsx(chol_mat, file = "cholesky.xlsx", row.names = TRUE, sheetName = "Cholesky_Decomp")
+write.xlsx(cor_var, file = "correlated_variables.xlsx", row.names = TRUE, sheetName = "Correlated_Variables")
+
+print(return_covariance)
+print(chol_mat)
+print(cor_var)
+
+###################### WIP ###################### 
+
+
 #### Calculate Monthly Returns
 portfolio_returns_tq_rebalanced_monthly <- 
   asset_returns_long %>%
@@ -66,17 +86,13 @@ portfolio_returns_tq_rebalanced_monthly <-
 ####
 
 #### Mean and STD of Portfolio returns
-mean_port_return <- 
-  mean(portfolio_returns_tq_rebalanced_monthly$returns)
+mean_port_return <-mean(portfolio_returns_tq_rebalanced_monthly$returns)
 
-stddev_port_return <- 
-  sd(portfolio_returns_tq_rebalanced_monthly$returns)
+stddev_port_return <- sd(portfolio_returns_tq_rebalanced_monthly$returns)
 ####
 
 #### Create Simulated monthly returns for 10 years using mean and std
-simulated_monthly_returns <- rnorm(120, 
-                                   mean_port_return, 
-                                   stddev_port_return)
+simulated_monthly_returns <- rnorm(120, mean_port_return, stddev_port_return)
 ####
 
 #### Create the simulated monthly returns based on 1 US Dollar
@@ -95,10 +111,7 @@ simulated_growth <-
 ####
 
 #### Compute and round cagr
-cagr <- 
-  ((simulated_growth$growth1[nrow(simulated_growth)]^
-      (1/10)) - 1) * 100
-
+cagr <- ((simulated_growth$growth1[nrow(simulated_growth)]^(1/10)) - 1) * 100
 cagr <- round(cagr, 2)
 #### 
 
