@@ -51,7 +51,7 @@ rownames(returns) <- asset_returns_long$date[1:56]
 ####
 
 #### Creating correlation matrix of returns
-return_cor <- cor(returns, method = "pearson") %>%
+return_cor <- cor(returns, method = "kendall") %>%
   round(digits = 4)
 write.xlsx(return_cor, file = "returns_correlation_matrix.xlsx", row.names = TRUE)
 ####
@@ -62,7 +62,7 @@ write.xlsx(return_cor, file = "returns_correlation_matrix.xlsx", row.names = TRU
 return_covariance <- cov(returns)
 chol_mat <- chol(return_covariance)
 
-cor_var <- as.numeric(returns) %*% as.numeric(chol_mat)
+cor_var <- as.matrix(returns) %*% chol_mat
 
 write.xlsx(return_covariance, file = "covariances.xlsx", row.names = TRUE, sheetName = "Covariance_Returns")
 write.xlsx(chol_mat, file = "cholesky.xlsx", row.names = TRUE, sheetName = "Cholesky_Decomp")
