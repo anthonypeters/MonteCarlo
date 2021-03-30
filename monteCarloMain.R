@@ -40,14 +40,15 @@ asset_returns_long <-
 ####
 
 #### Isolating returns of individual assets
-returns <- data.frame(matrix(nrow = 56, ncol = length(symbols)))
+returns <- data.frame(matrix(nrow = NROW(asset_returns_long)/length(symbols), 
+                             ncol = length(symbols)))
 for (i in 1:length(symbols)){
   returns[,i] <- subset(asset_returns_long, subset = (asset == symbols[i]),
                         select = returns, drop = FALSE)
 }
 
 colnames(returns) <- symbols
-rownames(returns) <- asset_returns_long$date[1:56]
+rownames(returns) <- asset_returns_long$date[1:NROW(returns)]
 ####
 
 #### Creating correlation matrix of returns
