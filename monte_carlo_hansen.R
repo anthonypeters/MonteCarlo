@@ -31,7 +31,7 @@ stock_returns_daily <- stock_prices %>%
                type = "log",
                col_rename = "returns") %>%
   pivot_wider(names_from = symbol, values_from = returns) %>%
-  data.fame()
+  data.frame()
 
 # Calculate MONTHLY returns (dollar amount)
 stock_returns_monthly <- stock_prices %>%
@@ -53,8 +53,7 @@ stock_returns_monthly <- stock_prices %>%
 
 # Correlation Matrices
 ## Correlating monthly returns
-return_cor_mat <- round(cor(stock_returns_monthly[, -1]), 4) %>%
-  transmute(return_cor_mat >= 0.3 | return_cor_mat <= -0.3)
+return_cor_mat <- round(cor(stock_returns_monthly[, -1]), 4)
 
 
 # MC Sim Function
