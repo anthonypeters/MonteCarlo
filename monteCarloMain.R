@@ -4,6 +4,7 @@ library(openxlsx)
 library(timetk)
 library(broom)
 library(highcharter)
+library(mvtnorm)
 
 
 #### PART 1 ####
