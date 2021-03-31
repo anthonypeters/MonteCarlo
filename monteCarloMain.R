@@ -93,7 +93,7 @@ stddev_port_return <- sd(portfolio_returns_tq_rebalanced_monthly$returns)
 ####
 
 #### Create Simulated monthly returns for 10 years using mean and std
-simulated_monthly_returns <- rnorm(120, mean_port_return, stddev_port_return)
+simulated_daily_returns <- rmvnorm(n = 365, mean = colMeans(returns), sigma = cov(returns), method = "eigen")
 ####
 
 #### Create the simulated monthly returns based on 1 US Dollar
