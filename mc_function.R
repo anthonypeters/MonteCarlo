@@ -45,6 +45,8 @@ mc.simulate <- function(symbols, weights, from, to, days_pred = 90, nsim = 90){
   rownames(returns) <- asset_returns_long$date[1:NROW(returns)]
   
   # simulating returns
+  portfolio_sim_growth <- data.frame(matrix(nrow = days_pred, ncol = nsim))
+  for (i in 1:nsim){
   ## Create Simulated daily returns for specified number of days using mean and std
   simulated_daily_returns <- rmvnorm(n = days_pred, 
                                      mean = colMeans(returns), sigma = cov(returns), 
@@ -52,15 +54,17 @@ mc.simulate <- function(symbols, weights, from, to, days_pred = 90, nsim = 90){
   
   ## Combine simulated returns into portfolio
   ### Multiply each column by corresponding portfolio weights
-  portfolio_sim_growth <- scale(simulated_daily_returns, center = FALSE, scale = weights) %>%
+  portfolio_sim_growth[i] <- scale(simulated_daily_returns, center = FALSE, scale = weights) %>%
     rowSums() %>%
-    # accumulate(`*`)
+    accumulate(`*`)
+  }
   
   return(portfolio_sim_growth)
 }
 
 # Testing MC sim function:
-test_simulation <- mc.simulate(symbols = t, weights = w, from = "2015-12-31", to = "2018-12-31", days_pred = 60)
+test_simulation <- mc.simulate(symbols = t, weights = w, from = "2015-12-31", to = "2018-12-31", days_pred = 120)
+
 
 # CAGR FUNCTION #
 
