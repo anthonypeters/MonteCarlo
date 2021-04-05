@@ -11,8 +11,8 @@ weights_file <- read.xlsx("weights.xlsx", sheet = "Weights")
 t <- weights_file$Tickers
 w <- weights_file$Weights 
 
-# NONTE CARLO SIMULATION FUNCTION #
-mc.simulate <- function(symbols, weights, from, to, days_pred = 90){
+# MONTE CARLO SIMULATION FUNCTION #
+mc.simulate <- function(symbols, weights, from, to, days_pred = 90, nsim = 90){
   # Pull prices from the web
   prices <- 
     getSymbols(symbols, src = 'yahoo', 
@@ -44,17 +44,19 @@ mc.simulate <- function(symbols, weights, from, to, days_pred = 90){
   colnames(returns) <- symbols
   rownames(returns) <- asset_returns_long$date[1:NROW(returns)]
   
-  # Create Simulated daily returns for specified number of days using mean and std
+  # simulating returns
+  ## Create Simulated daily returns for specified number of days using mean and std
   simulated_daily_returns <- rmvnorm(n = days_pred, 
                                      mean = colMeans(returns), sigma = cov(returns), 
                                      method = "eigen")
   
-  # Combine simulated returns into portfolio
-  ## Multiply each column by corresponding portfolio weights
-  portfolio_sim_returns <- scale(simulated_daily_returns, center = FALSE, scale = weights) %>%
-    rowSums()
+  ## Combine simulated returns into portfolio
+  ### Multiply each column by corresponding portfolio weights
+  portfolio_sim_growth <- scale(simulated_daily_returns, center = FALSE, scale = weights) %>%
+    rowSums() %>%
+    # accumulate(`*`)
   
-  return(portfolio_sim_returns)
+  return(portfolio_sim_growth)
 }
 
 # Testing MC sim function:
