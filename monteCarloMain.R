@@ -9,14 +9,19 @@ library(mvtnorm)
 
 #### PART 1 ####
 
+#### Read in current portfolio tickers & weights
+weights <- read.xlsx("weights.xlsx", sheet = "Weights")
+
+####
+  
 #### Read In Symbols
-symbols <- c("FDX","CORE", "BLK","LMT","ORCL","NTRS","SJM","MDLZ","JNJ","TPH","AXP","CNC","MDT","PFE","SYY","NRZ","OHI","VIRT","WMT","TSM","REGI","V","MSFT","BX","LDOS","MRK","NKE","AMZN","GLTR", "TLT")
+symbols <- weights$Tickers
 ####
 
 #### Read In Price Data from 2009-2019
 prices <- 
   getSymbols(symbols, src = 'yahoo', 
-             from = "2009-12-31",
+             from = "2016-12-31",
              to = "2019-12-31",
              auto.assign = TRUE, warnings = FALSE) %>% 
   map(~Ad(get(.))) %>%
@@ -26,13 +31,13 @@ prices <-
 ####
 
 #### Read in data for each ticker
-w <- c(0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.015,0.0428,0.05,0.05,0.05,0.05,0.05,0.05,0.05,0.05,0.05,0.1,0.15,0.1622)
+w <- weights$Weights 
 ####
 
 #### Calculate long-term returns
 asset_returns_long <-  
   prices %>% 
-  to.monthly(indexAt = "lastof", OHLC = FALSE) %>% 
+  to.daily(OHLC = FALSE) %>% 
   tk_tbl(preserve_index = TRUE, rename_index = "date") %>%
   gather(asset, returns, -date) %>% 
   group_by(asset) %>%  
@@ -45,7 +50,7 @@ returns <- data.frame(matrix(nrow = NROW(asset_returns_long)/length(symbols),
                              ncol = length(symbols)))
 for (i in 1:length(symbols)){
   returns[,i] <- subset(asset_returns_long, subset = (asset == symbols[i]),
-                        select = returns, drop = FALSE)
+                        select = c(returns), drop = FALSE)
 }
 
 colnames(returns) <- symbols
@@ -58,77 +63,26 @@ return_cor <- cor(returns, method = "kendall") %>%
 write.xlsx(return_cor, file = "returns_correlation_matrix.xlsx", row.names = TRUE)
 ####
 
-
-###################### WIP ###################### 
-
-return_covariance <- cov(returns)
-chol_mat <- chol(return_covariance)
-
-cor_var <- as.matrix(returns) %*% chol_mat
-
-write.xlsx(return_covariance, file = "covariances.xlsx", row.names = TRUE, sheetName = "Covariance_Returns")
-write.xlsx(chol_mat, file = "cholesky.xlsx", row.names = TRUE, sheetName = "Cholesky_Decomp")
-write.xlsx(cor_var, file = "correlated_variables.xlsx", row.names = TRUE, sheetName = "Correlated_Variables")
-
-print(return_covariance)
-print(chol_mat)
-print(cor_var)
-
-###################### WIP ###################### 
-
-
-#### Calculate Monthly Returns
-portfolio_returns_tq_rebalanced_monthly <- 
-  asset_returns_long %>%
-  tq_portfolio(assets_col  = asset, 
-               returns_col = returns,
-               weights     = w,
-               col_rename  = "returns",
-               rebalance_on = "months")
+#### Create Simulated daily returns for 90 days (~3 months) using mean and std
+simulated_daily_returns <- rmvnorm(n = 90, mean = colMeans(returns), sigma = cov(returns), method = "eigen")
 ####
 
-#### Mean and STD of Portfolio returns
-mean_port_return <-mean(portfolio_returns_tq_rebalanced_monthly$returns)
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-stddev_port_return <- sd(portfolio_returns_tq_rebalanced_monthly$returns)
-####
-
-#### Create Simulated monthly returns for 10 years using mean and std
-simulated_daily_returns <- rmvnorm(n = 365, mean = colMeans(returns), sigma = cov(returns), method = "eigen")
-####
-
-#### Create the simulated monthly returns based on 1 US Dollar
+#### Create the simulated daily returns based on 1 US Dollar
 simulated_returns_add_1 <- 
-  tibble(c(1, 1 + simulated_monthly_returns)) %>% 
+  tibble(c(1, 1 + simulated_daily_returns)) %>% 
   `colnames<-`("returns")
 ####
 
-#### Create simulated growth function based on 1 US Dollar. 
-simulated_growth <- 
-  simulated_returns_add_1 %>%
-  mutate(growth1 = accumulate(returns, function(x, y) x * y),
-         growth2 = accumulate(returns, `*`),
-         growth3 = cumprod(returns)) %>% 
-  select(-returns)
-####
 
 #### Compute and round cagr
 cagr <- ((simulated_growth$growth1[nrow(simulated_growth)]^(1/10)) - 1) * 100
 cagr <- round(cagr, 2)
 #### 
 
-#### Simulated Growth function using accumulate()
-simulation_accum_1 <- function(init_value, N, mean, stdev) {
-  tibble(c(init_value, 1 + rnorm(N, mean, stdev))) %>% 
-    `colnames<-`("returns") %>%
-    mutate(growth = 
-             accumulate(returns, 
-                        function(x, y) x * y)) %>% 
-    select(growth)
-}
-####
 
-#### Simulated Growth function using accumalte () **Almost identical to the one above**
+#### Simulated Growth function using accumulate ()
 simulation_accum_2 <- function(init_value, N, mean, stdev) {
   tibble(c(init_value, 1 + rnorm(N, mean, stdev))) %>% 
     `colnames<-`("returns") %>%
@@ -137,25 +91,6 @@ simulation_accum_2 <- function(init_value, N, mean, stdev) {
 }
 ####
 
-#### Simulated Growth function using cumprod()
-simulation_cumprod <- function(init_value, N, mean, stdev) {
-  tibble(c(init_value, 1 + rnorm(N, mean, stdev))) %>% 
-    `colnames<-`("returns") %>%
-    mutate(growth = cumprod(returns)) %>% 
-    select(growth)
-}
-####
-
-#### Simulated Growth function using all three methods
-simulation_confirm_all <- function(init_value, N, mean, stdev) {
-  tibble(c(init_value, 1 + rnorm(N, mean, stdev))) %>% 
-    `colnames<-`("returns") %>%
-    mutate(growth1 = accumulate(returns, function(x, y) x * y),
-           growth2 = accumulate(returns, `*`),
-           growth3 = cumprod(returns)) %>% 
-    select(-returns)
-}
-####
 
 #### Test for the functions
 simulation_confirm_all_test <- 
