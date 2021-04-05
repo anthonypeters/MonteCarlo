@@ -114,7 +114,7 @@ starts <-
 #### Monte Carlo the 51 simulations based on portfolio
 monte_carlo_sim_51 <- 
   map_dfc(starts, 
-          simulation_accum_1, 
+          simulation_accum_2, 
           N = 120, 
           mean = mean_port_return, 
           stdev = stddev_port_return)
@@ -129,14 +129,6 @@ monte_carlo_sim_51 <-
   mutate_all(funs(round(., 2))) 
 ####
 
-#### Rerun function to rerun 5 times
-monte_carlo_rerun_5 <-  
-  rerun(.n = 5, 
-        simulation_accum_1(1, 
-                           120,
-                           mean_port_return, 
-                           stddev_port_return))
-####
 
 #### Create 51 reruns function which should run the simulation 51 times
 reruns <- 51
