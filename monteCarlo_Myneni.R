@@ -20,10 +20,14 @@ symbols <- weights$Tickers
 
 #### Read In Price Data from 2009-2019
 prices <- 
-  getSymbols(symbols, src = 'yahoo', 
-             from = "2016-12-31",
-             to = "2019-12-31",
-             auto.assign = TRUE, warnings = FALSE) %>% 
+  #getSymbols(symbols, src = 'yahoo', 
+             #from = "2016-12-31",
+             #to = "2019-12-31",
+             #auto.assign = TRUE, warnings = FALSE) %>% 
+  tq_get(x, get= "stock.prices", 
+         from = "2016-12-31",
+         to = "2019-12-31",
+         complete_cases = TRUE) %>%
   map(~Ad(get(.))) %>%
   reduce(merge) %>% 
   `colnames<-`(symbols)
@@ -60,7 +64,7 @@ rownames(returns) <- asset_returns_long$date[1:NROW(returns)]
 #### Creating correlation matrix of returns
 return_cor <- cor(returns, method = "kendall") %>%
   round(digits = 4)
-write.xlsx(return_cor, file = "returns_correlation_matrix.xlsx", row.names = TRUE)
+#write.xlsx(return_cor, file = "returns_correlation_matrix.xlsx", row.names = TRUE)
 ####
 
 #### Create Simulated daily returns for 90 days (~3 months) using mean and std
