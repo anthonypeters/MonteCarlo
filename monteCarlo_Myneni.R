@@ -19,21 +19,25 @@ symbols <- weights$Tickers
 ####
 
 #### Read In Price Data from 2009-2019
-prices <- 
+prices2 <- 
   #getSymbols(symbols, src = 'yahoo', 
              #from = "2016-12-31",
              #to = "2019-12-31",
              #auto.assign = TRUE, warnings = FALSE) %>% 
-  tq_get(x, get= "stock.prices", 
+  tq_get(symbols, get= "stock.prices", 
          from = "2016-12-31",
          to = "2019-12-31",
-         complete_cases = TRUE) %>%
-  map(~Ad(get(.))) %>%
-  reduce(merge) %>% 
-  `colnames<-`(symbols)
+         complete_cases = TRUE) 
 
 ####
-
+prices3 <- data.frame(matrix(nrow = NROW(prices2)/length(symbols), 
+                             ncol = length(symbols)))
+for (i in 1:length(symbols)){
+  prices3[,i] <- subset(prices2, subset = (symbol == symbols[i]),
+                        select = c(adjusted), drop = FALSE)
+}
+colnames(prices3) <- symbols
+rownames(prices3) <- prices2$date[1:NROW(prices3)]
 #### Read in data for each ticker
 w <- weights$Weights 
 ####
@@ -72,7 +76,7 @@ simulated_daily_returns <- rmvnorm(n = 90, mean = colMeans(returns), sigma = cov
 ####
 
 #### Combining simulated asset daily returns into simulated portfolio returns
-portfolio_sim_returns <- scale(simulated_daily_returns, center = FALSE, scale = weights) %>%
+portfolio_sim_returns <- scale(simulated_daily_returns, center = FALSE, scale = w) %>%
   rowSums()
 #### 
 
