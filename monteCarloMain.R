@@ -67,6 +67,11 @@ write.xlsx(return_cor, file = "returns_correlation_matrix.xlsx", row.names = TRU
 simulated_daily_returns <- rmvnorm(n = 90, mean = colMeans(returns), sigma = cov(returns), method = "eigen")
 ####
 
+#### Combining simulated asset daily returns into simulated portfolio returns
+portfolio_sim_returns <- scale(simulated_daily_returns, center = FALSE, scale = weights) %>%
+  rowSums()
+#### 
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 #### Create the simulated daily returns based on 1 US Dollar
