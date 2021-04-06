@@ -18,25 +18,29 @@ weights <- read.xlsx("weights.xlsx", sheet = "Weights")
 symbols <- weights$Tickers
 ####
 
-#### Read In Price Data from 2009-2019
-prices <- 
-  getSymbols(symbols, src = 'yahoo', 
-             from = "2016-12-31",
-             to = "2019-12-31",
-             auto.assign = TRUE, warnings = FALSE) %>% 
-  map(~Ad(get(.))) %>%
-  reduce(merge) %>% 
-  `colnames<-`(symbols)
-
-####
-
 #### Read in data for each ticker
 w <- weights$Weights 
+
+#### Read In Price Data from 2009-2019
+prices <- 
+  tq_get(symbols, get= "stock.prices", 
+         from = "2016-12-31",
+         to = "2019-12-31",
+         complete_cases = TRUE) 
+
 ####
+prices_mod <- data.frame(matrix(nrow = NROW(prices)/length(symbols), 
+                             ncol = length(symbols)))
+for (i in 1:length(symbols)){
+  prices_mod[,i] <- subset(prices, subset = (symbol == symbols[i]),
+                        select = c(adjusted), drop = FALSE)
+}
+colnames(prices_mod) <- symbols
+rownames(prices_mod) <- prices$date[1:NROW(prices_mod)]
 
 #### Calculate long-term returns
 asset_returns_long <-  
-  prices %>% 
+  prices_mod %>% 
   to.daily(OHLC = FALSE) %>% 
   tk_tbl(preserve_index = TRUE, rename_index = "date") %>%
   gather(asset, returns, -date) %>% 
@@ -68,7 +72,7 @@ simulated_daily_returns <- rmvnorm(n = 90, mean = colMeans(returns), sigma = cov
 ####
 
 #### Combining simulated asset daily returns into simulated portfolio returns
-portfolio_sim_returns <- scale(simulated_daily_returns, center = FALSE, scale = weights) %>%
+portfolio_sim_returns <- scale(simulated_daily_returns, center = FALSE, scale = w) %>%
   rowSums()
 #### 
 
@@ -76,26 +80,18 @@ portfolio_sim_returns <- scale(simulated_daily_returns, center = FALSE, scale = 
 
 #### Create the simulated daily returns based on 1 US Dollar
 simulated_returns_add_1 <- 
-  tibble(c(1, 1 + simulated_daily_returns)) %>% 
+  tibble(c(1, 1 + portfolio_sim_returns)) %>% 
   `colnames<-`("returns")
 ####
 
-
-#### Compute and round cagr
-cagr <- ((simulated_growth$growth1[nrow(simulated_growth)]^(1/10)) - 1) * 100
-cagr <- round(cagr, 2)
-#### 
-
-
 #### Simulated Growth function using accumulate ()
-simulation_accum_2 <- function(init_value, N, mean, stdev) {
-  tibble(c(init_value, 1 + rnorm(N, mean, stdev))) %>% 
-    `colnames<-`("returns") %>%
-    mutate(growth = accumulate(returns, `*`)) %>% 
-    select(growth)
-}
+accumulated_growth <- unlist(accumulate(simulated_returns_add_1, `*`))
 ####
 
+#### Compute and round cagr
+cagr <- ((accumulated_growth[length(accumulated_growth)]^(1/10)) - 1) * 100
+cagr <- round(cagr, 2)
+#### 
 
 #### Test for the functions
 simulation_confirm_all_test <- 
