@@ -1,7 +1,6 @@
 library(tidyquant)
 library(tidyverse)
 library(timetk)
-
 #### Calculate long-term returns
 asset_returns_long <-  
   prices %>% 
