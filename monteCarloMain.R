@@ -9,26 +9,18 @@ library(mvtnorm)
 
 #### PART 1 ####
 
-#### Read in current portfolio tickers & weights
-weights <- read.xlsx("weights.xlsx", sheet = "Weights")
+# Read in current portfolio tickers & weights
+weights <- read.xlsx("weights.xlsx", sheet = "Weights") # portfolio data frame
+symbols <- weights$Tickers # symbols
+w <- weights$Weights # tickers
 
-####
-  
-#### Read In Symbols
-symbols <- weights$Tickers
-####
-
-#### Read in data for each ticker
-w <- weights$Weights 
-
-#### Read In Price Data from 2009-2019
+# Pulling prices from yahoo & reformatting
 prices <- 
   tq_get(symbols, get= "stock.prices", 
          from = "2016-12-31",
          to = "2019-12-31",
          complete_cases = TRUE) 
 
-####
 prices_mod <- data.frame(matrix(nrow = NROW(prices)/length(symbols), 
                              ncol = length(symbols)))
 for (i in 1:length(symbols)){
@@ -38,7 +30,7 @@ for (i in 1:length(symbols)){
 colnames(prices_mod) <- symbols
 rownames(prices_mod) <- prices$date[1:NROW(prices_mod)]
 
-#### Calculate long-term returns
+#### Calculate daily log returns
 asset_returns_long <-  
   prices_mod %>% 
   to.daily(OHLC = FALSE) %>% 
@@ -47,9 +39,8 @@ asset_returns_long <-
   group_by(asset) %>%  
   mutate(returns = (log(returns) - log(lag(returns)))) %>% 
   na.omit()
-####
 
-#### Isolating returns of individual assets
+#### Isolating returns of individual assets (reformatting to be user-friendly)
 returns <- data.frame(matrix(nrow = NROW(asset_returns_long)/length(symbols), 
                              ncol = length(symbols)))
 for (i in 1:length(symbols)){
@@ -61,26 +52,21 @@ colnames(returns) <- symbols
 rownames(returns) <- asset_returns_long$date[1:NROW(returns)]
 ####
 
-#### Creating correlation matrix of returns
-return_cor <- cor(returns, method = "kendall") %>%
-  round(digits = 4)
-write.xlsx(return_cor, file = "returns_correlation_matrix.xlsx", row.names = TRUE)
+#### Create Simulated daily returns for 252 days (1 year) using mean and std
+simulated_daily_returns <- rmvnorm(n = 252, 
+                                   mean = colMeans(returns), # vector of asset means
+                                   sigma = cov(returns),  # covariance matrix
+                                   method = "eigen") 
 ####
 
-#### Create Simulated daily returns for 90 days (~3 months) using mean and std
-simulated_daily_returns <- rmvnorm(n = 90, mean = colMeans(returns), sigma = cov(returns), method = "eigen")
-####
-
-#### Combining simulated asset daily returns into simulated portfolio returns
+#### Combining asset returns into portfolio returns
 portfolio_sim_returns <- scale(simulated_daily_returns, center = FALSE, scale = w) %>%
   rowSums()
 #### 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
-#### Create the simulated daily returns based on 1 US Dollar
+#### Adding a baseline investment ($100,000.00)
 simulated_returns_add_1 <- 
-  tibble(c(1, 1 + portfolio_sim_returns)) %>% 
+  tibble(c(100000, 100000 + portfolio_sim_returns)) %>% 
   `colnames<-`("returns")
 ####
 
@@ -93,11 +79,7 @@ cagr <- ((accumulated_growth[length(accumulated_growth)]^(1/10)) - 1) * 100
 cagr <- round(cagr, 2)
 #### 
 
-#### Test for the functions
-simulation_confirm_all_test <- 
-  simulation_confirm_all(1, 120, 
-                         mean_port_return, stddev_port_return)
-####
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 #### PART 2 ####
 
@@ -123,15 +105,6 @@ monte_carlo_sim_51 <-
   select(month, everything()) %>% 
   `colnames<-`(c("month", names(starts))) %>% 
   mutate_all(funs(round(., 2))) 
-####
-
-#### Rerun function to rerun 5 times
-monte_carlo_rerun_5 <-  
-  rerun(.n = 5, 
-        simulation_accum_1(1, 
-                           120,
-                           mean_port_return, 
-                           stddev_port_return))
 ####
 
 #### Create 51 reruns function which should run the simulation 51 times
