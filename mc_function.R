@@ -12,7 +12,7 @@ t <- weights_file$Tickers
 w <- weights_file$Weights 
 
 # MONTE CARLO SIMULATION FUNCTION #
-mc.simulate <- function(symbols, weights, from, to, days_pred = 90, nsim = 90){
+mc.simulate <- function(symbols, weights, from, to, days_pred = 252, nsim = 100){
   # Pull prices from the web
   prices <- 
     getSymbols(symbols, src = 'yahoo', 
@@ -63,7 +63,9 @@ mc.simulate <- function(symbols, weights, from, to, days_pred = 90, nsim = 90){
 }
 
 # Testing MC sim function:
-test_simulation <- mc.simulate(symbols = t, weights = w, from = "2015-12-31", to = "2018-12-31", days_pred = 120)
+test_simulation <- mc.simulate(symbols = t, weights = w, from = "2015-12-31", to = "2018-12-31", 
+                               days_pred = 252,
+                               nsim = 100)
 
 
 # CAGR FUNCTION #
