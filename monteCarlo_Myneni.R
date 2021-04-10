@@ -18,29 +18,33 @@ weights <- read.xlsx("weights.xlsx", sheet = "Weights")
 symbols <- weights$Tickers
 ####
 
-#### Read in data for each ticker
-w <- weights$Weights 
-
 #### Read In Price Data from 2009-2019
-prices <- 
+prices2 <- 
+  #getSymbols(symbols, src = 'yahoo', 
+             #from = "2016-12-31",
+             #to = "2019-12-31",
+             #auto.assign = TRUE, warnings = FALSE) %>% 
   tq_get(symbols, get= "stock.prices", 
          from = "2016-12-31",
          to = "2019-12-31",
          complete_cases = TRUE) 
 
 ####
-prices_mod <- data.frame(matrix(nrow = NROW(prices)/length(symbols), 
+prices3 <- data.frame(matrix(nrow = NROW(prices2)/length(symbols), 
                              ncol = length(symbols)))
 for (i in 1:length(symbols)){
-  prices_mod[,i] <- subset(prices, subset = (symbol == symbols[i]),
+  prices3[,i] <- subset(prices2, subset = (symbol == symbols[i]),
                         select = c(adjusted), drop = FALSE)
 }
-colnames(prices_mod) <- symbols
-rownames(prices_mod) <- prices$date[1:NROW(prices_mod)]
+colnames(prices3) <- symbols
+rownames(prices3) <- prices2$date[1:NROW(prices3)]
+#### Read in data for each ticker
+w <- weights$Weights 
+####
 
 #### Calculate long-term returns
 asset_returns_long <-  
-  prices_mod %>% 
+  prices %>% 
   to.daily(OHLC = FALSE) %>% 
   tk_tbl(preserve_index = TRUE, rename_index = "date") %>%
   gather(asset, returns, -date) %>% 
@@ -64,7 +68,7 @@ rownames(returns) <- asset_returns_long$date[1:NROW(returns)]
 #### Creating correlation matrix of returns
 return_cor <- cor(returns, method = "kendall") %>%
   round(digits = 4)
-write.xlsx(return_cor, file = "returns_correlation_matrix.xlsx", row.names = TRUE)
+#write.xlsx(return_cor, file = "returns_correlation_matrix.xlsx", row.names = TRUE)
 ####
 
 #### Create Simulated daily returns for 90 days (~3 months) using mean and std
@@ -80,18 +84,26 @@ portfolio_sim_returns <- scale(simulated_daily_returns, center = FALSE, scale = 
 
 #### Create the simulated daily returns based on 1 US Dollar
 simulated_returns_add_1 <- 
-  tibble(c(1, 1 + portfolio_sim_returns)) %>% 
+  tibble(c(1, 1 + simulated_daily_returns)) %>% 
   `colnames<-`("returns")
 ####
 
-#### Simulated Growth function using accumulate ()
-accumulated_growth <- unlist(accumulate(simulated_returns_add_1, `*`))
-####
 
 #### Compute and round cagr
-cagr <- ((accumulated_growth[length(accumulated_growth)]^(1/10)) - 1) * 100
+cagr <- ((simulated_growth$growth1[nrow(simulated_growth)]^(1/10)) - 1) * 100
 cagr <- round(cagr, 2)
 #### 
+
+
+#### Simulated Growth function using accumulate ()
+simulation_accum_2 <- function(init_value, N, mean, stdev) {
+  tibble(c(init_value, 1 + rnorm(N, mean, stdev))) %>% 
+    `colnames<-`("returns") %>%
+    mutate(growth = accumulate(returns, `*`)) %>% 
+    select(growth)
+}
+####
+
 
 #### Test for the functions
 simulation_confirm_all_test <- 
@@ -110,7 +122,7 @@ starts <-
 #### Monte Carlo the 51 simulations based on portfolio
 monte_carlo_sim_51 <- 
   map_dfc(starts, 
-          simulation_accum_2, 
+          simulation_accum_1, 
           N = 120, 
           mean = mean_port_return, 
           stdev = stddev_port_return)
@@ -125,6 +137,14 @@ monte_carlo_sim_51 <-
   mutate_all(funs(round(., 2))) 
 ####
 
+#### Rerun function to rerun 5 times
+monte_carlo_rerun_5 <-  
+  rerun(.n = 5, 
+        simulation_accum_1(1, 
+                           120,
+                           mean_port_return, 
+                           stddev_port_return))
+####
 
 #### Create 51 reruns function which should run the simulation 51 times
 reruns <- 51
