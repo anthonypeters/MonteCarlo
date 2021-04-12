@@ -62,7 +62,7 @@ mc.simulate <- function(symbols, weights, from, to, days_pred = 252, init_invest
     
     ## Combine simulated returns into portfolio
     ### Multiply each column by corresponding portfolio weights
-    portfolio_sim_growth[i] <- scale(simulated_daily_returns, center = FALSE, scale = weights) %>%
+    portfolio_sim_growth[i] <- scale(simulated_daily_returns, center = FALSE, scale = 1/weights) %>%
       rowSums() %>%
       accumulate(`*`)
   }
@@ -76,6 +76,10 @@ mc.simulate <- function(symbols, weights, from, to, days_pred = 252, init_invest
 test_sim <- mc.simulate(symbols = t, weights = w, from = "2016-12-31", to = "2019-12-31", 
                                days_pred = 252,
                                nsim = 100)
+
+# Simulation Statistics Histograms
+hist(apply(test_sim, 2, mean))
+hist(apply(test_sim, 2, sd))
 
 
 # CAGR FUNCTION #
