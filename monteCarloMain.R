@@ -60,13 +60,13 @@ simulated_daily_returns <- rmvnorm(n = 252,
 ####
 
 #### Combining asset returns into portfolio returns
-portfolio_sim_returns <- scale(simulated_daily_returns, center = FALSE, scale = w) %>%
+portfolio_sim_returns <- scale(simulated_daily_returns, center = FALSE, scale = 1/w) %>%
   rowSums()
 #### 
 
-#### Adding a baseline investment ($100,000.00)
+#### Adding a baseline investment ($1)
 simulated_returns_add_1 <- 
-  tibble(c(100000, 100000 + portfolio_sim_returns)) %>% 
+  tibble(c(1, 1 + portfolio_sim_returns)) %>% 
   `colnames<-`("returns")
 ####
 
