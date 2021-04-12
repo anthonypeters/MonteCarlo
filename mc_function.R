@@ -58,7 +58,7 @@ mc.simulate <- function(symbols, weights, from, to, days_pred = 252, init_invest
                                        mean = colMeans(returns), sigma = cov(returns), 
                                        method = "eigen")
     simulated_daily_returns <- rbind(rep(init_invest, NCOL(simulated_daily_returns)),
-                                     simulated_daily_returns)
+                                     1 + simulated_daily_returns)
     
     ## Combine simulated returns into portfolio
     ### Multiply each column by corresponding portfolio weights
@@ -69,13 +69,15 @@ mc.simulate <- function(symbols, weights, from, to, days_pred = 252, init_invest
   colnames(portfolio_sim_growth) <- paste(rep("Sim", NCOL(portfolio_sim_growth)),
                                           as.character(seq(1, NCOL(portfolio_sim_growth), 1)),
                                           sep = " ")
+  portfolio_sim_growth <- round(portfolio_sim_growth, 2)
   return(portfolio_sim_growth)
 }
 
 # Testing MC sim function:
-test_sim <- mc.simulate(symbols = t, weights = w, from = "2016-12-31", to = "2019-12-31", 
-                               days_pred = 252,
-                               nsim = 100)
+test_sim <- mc.simulate(symbols = t, weights = w, from = "2016-12-31", to = "2019-12-31",
+                        init_invest = 10000,
+                        days_pred = 252,
+                        nsim = 100)
 
 # Simulation Statistics Histograms
 hist(apply(test_sim, 2, mean))
@@ -94,13 +96,14 @@ print(sim_cagr)
 
 # CHARTS FUNCTION #
 mc.plot <- function(x, min.max.med = FALSE){
-  # Data frame conversion
-  data <- data.frame(stack(x[1:NCOL(x)]))
-  data$id <- as.character(rep(seq(1, NROW(x)), NCOL(x)))
-  colnames(data) <- c("Growth", "Simulation", "Day")
-  
   # Plotting with hchart
   if (min.max.med == FALSE){
+    # Data preparation
+    data <- data.frame(stack(x[1:NCOL(x)]))
+    data$id <- as.character(rep(seq(1, NROW(x)), NCOL(x)))
+    colnames(data) <- c("Growth", "Simulation", "Day")
+    
+    # Plotting simulations
     plt <- hchart(data,
                   type = 'line',
                   mapping = hcaes(x = Day,
@@ -115,7 +118,29 @@ mc.plot <- function(x, min.max.med = FALSE){
       hc_legend(enabled = FALSE)
     
   } else if (min.max.med == TRUE){
-    errorCondition("Not yet implemented") # REPLACE WITH ACTUAL CODE
+    # Data preparation
+    x3m <- data.frame(matrix(nrow = NROW(x), ncol = 3))
+    x3m$min <- x[ , last(x) == min(last(x))]
+    x3m$med <- x[ , last(x) == median(last(x))]
+    x3m$max <- x[ , last(x) == max(last(x))]
+    
+    data3m <- data.frame(stack(x3m[1:NCOL(x3m)]))
+    data3m$id <- as.character(rep(seq(1, NROW(x3m)), NCOL(x3m)))
+    colnames(data3m) <- c("Growth", "Simulation", "Day")
+    
+    # Plotting simulations
+    plt <- hchart(data3m,
+                  type = 'line',
+                  mapping = hcaes(x = Day,
+                                  y = Growth,
+                                  group = Simulation)) %>%
+      hc_title(text = list("Simulated Portfolio Value")) %>%
+      hc_xAxis(title = list(text = "Days")) %>%
+      hc_yAxis(title = list(text = "Portfolio Growth"),
+               labels = list(format = "${value}"))  %>%
+      hc_add_theme(hc_theme_flat()) %>%
+      hc_exporting(enabled = TRUE) %>% 
+      hc_legend(enabled = FALSE)
   }
   return(plt)
 }
