@@ -22,10 +22,10 @@ prices <-
          complete_cases = TRUE) 
 
 prices_mod <- data.frame(matrix(nrow = NROW(prices)/length(symbols), 
-                             ncol = length(symbols)))
+                                ncol = length(symbols)))
 for (i in 1:length(symbols)){
   prices_mod[,i] <- subset(prices, subset = (symbol == symbols[i]),
-                        select = c(adjusted), drop = FALSE)
+                           select = c(adjusted), drop = FALSE)
 }
 colnames(prices_mod) <- symbols
 rownames(prices_mod) <- prices$date[1:NROW(prices_mod)]
