@@ -12,7 +12,7 @@ t <- weights_file$Tickers
 w <- weights_file$Weights 
 
 # MONTE CARLO SIMULATION FUNCTION #
-mc.simulate <- function(symbols, weights, from, to, days_pred = 252, init_invest = 1, nsim = 100){
+mc.simulate <- function(symbols, weights, from, to, days_pred = 252, init_invest = 1, nsim = 101){
   # Pulling prices from yahoo & reformatting
   prices <- 
     tq_get(symbols, get= "stock.prices", 
@@ -73,11 +73,12 @@ mc.simulate <- function(symbols, weights, from, to, days_pred = 252, init_invest
   return(portfolio_sim_growth)
 }
 
+
 # Testing MC sim function:
 test_sim <- mc.simulate(symbols = t, weights = w, from = "2016-12-31", to = "2019-12-31",
                         init_invest = 10000,
                         days_pred = 252,
-                        nsim = 100)
+                        nsim = 101)
 
 # Simulation Statistics Histograms
 hist(apply(test_sim, 2, mean))
@@ -99,7 +100,7 @@ mc.plot <- function(x, min.max.med = FALSE){
   # Plotting with hchart
   if (min.max.med == FALSE){
     # Data preparation
-    data <- data.frame(stack(x[1:NCOL(x)]))
+    data <- data.frame(stack(x[,1:NCOL(x)]))
     data$id <- as.character(rep(seq(1, NROW(x)), NCOL(x)))
     colnames(data) <- c("Growth", "Simulation", "Day")
     
@@ -119,12 +120,14 @@ mc.plot <- function(x, min.max.med = FALSE){
     
   } else if (min.max.med == TRUE){
     # Data preparation
-    x3m <- data.frame(matrix(nrow = NROW(x), ncol = 3))
-    x3m$min <- x[ , last(x) == min(last(x))]
-    x3m$med <- x[ , last(x) == median(last(x))]
-    x3m$max <- x[ , last(x) == max(last(x))]
+    min <- x[1:NROW(x), xts::last(x) == min(as.numeric(xts::last(x)))]
+    med <- x[1:NROW(x), xts::last(x) == median(as.numeric(xts::last(x)))]
+    max <- x[1:NROW(x), xts::last(x) == max(as.numeric(xts::last(x)))]
     
-    data3m <- data.frame(stack(x3m[1:NCOL(x3m)]))
+    x3m <- data.frame(min, med, max)
+    
+    
+    data3m <- data.frame(stack(x3m[,1:NCOL(x3m)]))
     data3m$id <- as.character(rep(seq(1, NROW(x3m)), NCOL(x3m)))
     colnames(data3m) <- c("Growth", "Simulation", "Day")
     
@@ -146,9 +149,7 @@ mc.plot <- function(x, min.max.med = FALSE){
 }
 
 # Testing plot function for MC sim:
-mc.plot(x = test_sim, min.max.med = F)
-
-
+mc.plot(x = test_sim, min.max.med = TRUE)
 
 
 
