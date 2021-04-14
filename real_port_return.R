@@ -53,19 +53,22 @@ rownames(returns) <- asset_returns_long$date[1:NROW(returns)]
 ####
 
 #### Combining asset returns into portfolio returns
-portfolio_sim_returns <- scale(returns, center = FALSE, scale = 1/w) %>%
+portfolio_obs_returns <- scale(returns, center = FALSE, scale = 1/w) %>%
   rowSums()
 #### 
 
 #### Adding a baseline investment ($1)
-simulated_returns_add_1 <- 
-  tibble(c(10000, 1 + portfolio_sim_returns)) %>% 
+observed_returns_add_1 <- 
+  tibble(c(10000, 1 + portfolio_obs_returns)) %>% 
   `colnames<-`("returns")
+summary(observed_returns_add_1)
 ####
 
 #### Simulated Growth function using accumulate ()
-accumulated_growth <- unlist(accumulate(simulated_returns_add_1$returns, `*`))
+accumulated_growth <- unlist(accumulate(observed_returns_add_1$returns, `*`))
 summary(accumulated_growth)
+last(accumulated_growth)
+hist(accumulated_growth)
 ####
 
 plot(1:length(accumulated_growth), accumulated_growth, type = 'l')

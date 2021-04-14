@@ -6,13 +6,15 @@ library(broom)
 library(highcharter)
 library(mvtnorm)
 
+set.seed(1456)
+
 # Read in current portfolio tickers & weights
 weights_file <- read.xlsx("weights.xlsx", sheet = "Weights")
 t <- weights_file$Tickers
 w <- weights_file$Weights 
 
 # MONTE CARLO SIMULATION FUNCTION #
-mc.simulate <- function(symbols, weights, from, to, days_pred = 252, init_invest = 1, nsim = 101){
+mc.simulate <- function(symbols, weights, from, to, days_pred = 3*252, init_invest = 1, nsim = 101){
   # Pulling prices from yahoo & reformatting
   prices <- 
     tq_get(symbols, get= "stock.prices", 
@@ -75,9 +77,9 @@ mc.simulate <- function(symbols, weights, from, to, days_pred = 252, init_invest
 
 
 # Testing MC sim function:
-test_sim <- mc.simulate(symbols = t, weights = w, from = "2016-12-31", to = "2019-12-31",
+test_sim <- mc.simulate(symbols = t, weights = w, from = "2016-12-31", to = "2018-12-31",
                         init_invest = 10000,
-                        days_pred = 252,
+                        days_pred = 3*252,
                         nsim = 101)
 
 # Simulation Statistics Histograms
@@ -149,6 +151,8 @@ mc.plot <- function(x, min.max.med = FALSE){
 }
 
 # Testing plot function for MC sim:
+
+# mc.plot(x = test_sim)
 mc.plot(x = test_sim, min.max.med = TRUE)
 
 
