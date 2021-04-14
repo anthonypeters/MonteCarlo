@@ -67,6 +67,7 @@ summary(observed_returns_add_1)
 #### Simulated Growth function using accumulate ()
 accumulated_growth <- unlist(accumulate(observed_returns_add_1$returns, `*`))
 summary(accumulated_growth)
+last(accumulated_growth)
 hist(accumulated_growth)
 ####
 

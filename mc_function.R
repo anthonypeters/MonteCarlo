@@ -152,7 +152,7 @@ mc.plot <- function(x, min.max.med = FALSE){
 
 # Testing plot function for MC sim:
 
-mc.plot(x = test_sim)
+# mc.plot(x = test_sim)
 mc.plot(x = test_sim, min.max.med = TRUE)
 
 
