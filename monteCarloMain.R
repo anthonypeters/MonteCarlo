@@ -75,7 +75,7 @@ accumulated_growth <- unlist(accumulate(simulated_returns_add_1, `*`))
 ####
 
 #### Compute and round cagr
-cagr <- ((accumulated_growth[length(accumulated_growth)]^(1/10)) - 1) * 100
+cagr <- (((accumulated_growth[length(accumulated_growth)]/accumulated_growth[1])^(1/(length(accumulated_growth)/252))) - 1) * 100
 cagr <- round(cagr, 2)
 #### 
 

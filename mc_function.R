@@ -13,7 +13,7 @@ weights_file <- read.xlsx("weights.xlsx", sheet = "Weights")
 t <- weights_file$Tickers
 w <- weights_file$Weights 
 
-# MONTE CARLO SIMULATION FUNCTION #
+##### MONTE CARLO SIMULATION FUNCTION #####
 mc.simulate <- function(symbols, weights, from, to, days_pred = 3*252, init_invest = 1, nsim = 101){
   # Pulling prices from yahoo & reformatting
   prices <- 
@@ -78,7 +78,7 @@ mc.simulate <- function(symbols, weights, from, to, days_pred = 3*252, init_inve
 
 # Testing MC sim function:
 test_sim <- mc.simulate(symbols = t, weights = w, from = "2016-12-31", to = "2018-12-31",
-                        init_invest = 10000,
+                        init_invest = 1100000,
                         days_pred = 3*252,
                         nsim = 101)
 
@@ -87,17 +87,17 @@ hist(apply(test_sim, 2, mean))
 hist(apply(test_sim, 2, sd))
 
 
-# CAGR FUNCTION #
+##### CAGR FUNCTION #####
 mc.cagr <- function(vec){
-  cagr <- round(((vec[length(vec)]^(1/10)) - 1) * 100, 2)
+  cagr <- round((((vec[length(vec)]/vec[1])^(1/(length(vec)/252))) - 1) * 100, 2)
   return(cagr)
 }
 
 # Testing MC sim CAGR function:
 sim_cagr <- apply(test_sim, 2, mc.cagr)
-print(sim_cagr)
+summary(sim_cagr)
 
-# CHARTS FUNCTION #
+##### CHARTS FUNCTION #####
 mc.plot <- function(x, min.max.med = FALSE){
   # Plotting with hchart
   if (min.max.med == FALSE){

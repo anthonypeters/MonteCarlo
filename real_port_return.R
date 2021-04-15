@@ -71,4 +71,7 @@ last(accumulated_growth)
 hist(accumulated_growth)
 ####
 
+cagr <- (((accumulated_growth[length(accumulated_growth)]/accumulated_growth[1])^(1/3)) - 1) * 100
+(cagr <- round(cagr, 2))
+
 plot(1:length(accumulated_growth), accumulated_growth, type = 'l')
